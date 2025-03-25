@@ -762,11 +762,11 @@
                 console.log("图片加载完成");
                 // 短暂延迟确保界面已更新
                 if (autoReadEnabled) {
-                    // 第一个试次延迟1秒播放，其他试次正常播放
+                    // 第一个试次延迟2秒播放，其他试次正常播放
                     if (experimentData.currentTrial === 1) {
                         setTimeout(() => {
                             readImageName(2); // 朗读两次
-                        }, 1000);
+                        }, 2000);
                     } else {
                         setTimeout(() => {
                             readImageName(2); // 朗读两次
@@ -818,7 +818,7 @@
                     console.warn('资源加载超时，强制启用开始按钮');
                     document.getElementById('startExperimentBtn').disabled = false;
                     document.getElementById('loadingMessage').textContent = '资源加载超时，但您仍可以开始实验';
-                }, 30000); // 30秒超时
+                }, 120000); // 120秒超时
                 
                 // 并行加载图片和音频
                 await Promise.all([preloadImages(), preloadAudio()]);
