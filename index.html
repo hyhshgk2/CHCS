@@ -762,11 +762,11 @@
                 console.log("图片加载完成");
                 // 短暂延迟确保界面已更新
                 if (autoReadEnabled) {
-                    // 第一个试次延迟2秒播放，其他试次正常播放
+                    // 第一个试次延迟1秒播放，其他试次正常播放
                     if (experimentData.currentTrial === 1) {
                         setTimeout(() => {
                             readImageName(2); // 朗读两次
-                        }, 2000);
+                        }, 1000);
                     } else {
                         setTimeout(() => {
                             readImageName(2); // 朗读两次
