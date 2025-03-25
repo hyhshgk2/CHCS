@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>词语实验</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- 添加Font Awesome图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .section {
+            display: none;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .no-drag {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            pointer-events: none;
+        }
+
+        /* User Info Form Styles */
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 24px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .form-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background-color: #fff;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #4a90e2;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: #aaa;
+        }
+
+        .button-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .button:hover {
+            background: #357abd;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Introduction Section Styles */
+        #introSection {
+            text-align: center;
+        }
+
+        #introSection p {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        /* Trial Section Styles */
+        .trial-container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            cursor: pointer;
+            border: 1px solid #eaeaea;
+            border-radius: 8px;
+            overflow: visible;
+            margin-bottom: 15px;
+        }
+
+        /* 修改试次标题和退出按钮的样式，放在图片下方并增加间距 */
+        .trial-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 25px;
+            width: 100%;
+            padding: 8px 12px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            box-shadow: none;
+        }
+
+        .trial-number {
+            font-size: 14px;
+            font-weight: normal;
+            color: #777;
+            padding: 3px 8px;
+        }
+
+        /* 修改退出按钮样式为浅灰色 */
+        .exit-button {
+            background-color: #e0e0e0;
+            color: #666;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: none;
+            transition: all 0.3s ease;
+        }
+
+        .exit-button:hover {
+            background-color: #d0d0d0;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .click-area {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            z-index: 20;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+
+        .click-area.top-left {
+            top: 0;
+            left: 0;
+        }
+    
+        .click-area.top-right {
+            top: 0;
+            right: 0;
+        }
+    
+        .click-area.bottom-left {
+            bottom: 0;
+            left: 0;
+        }
+    
+        .click-area.bottom-right {
+            bottom: 0;
+            right: 0;
+        }
+
+        /* 重要：确保用户信息表单可以正常使用 */
+        #userInfoSection input,
+        #userInfoSection select,
+        #userInfoSection button {
+        pointer-events: auto !important;
+        user-select: auto !important;
+        -webkit-user-select: auto !important;
+        -moz-user-select: auto !important;
+        -ms-user-select: auto !important;
+        }
+
+
+        .trial-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            pointer-events: none;
+            -webkit-user-drag: none;
+        }
+
+        .select-button {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: rgba(215, 216, 218, 0.9);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .select-button:hover {
+            background: rgba(0, 86, 179, 0.9);
+            transform: scale(1.1);
+        }
+        
+        .select-button.top-left {
+            top: 1px;
+            left: 1px;
+        }
+        
+        .select-button.top-right {
+            top: 1px;
+            right: 1px;
+        }
+        
+        .select-button.bottom-left {
+            bottom: 1px;
+            left: 1px;
+        }
+        
+        .select-button.bottom-right {
+            bottom: 1px;
+            right: 1px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                margin: 20px auto;
+            }
+
+            .section {
+                padding: 20px;
+            }
+
+            .form-group input,
+            .form-group select {
+                padding: 10px 12px;
+                font-size: 14px;
+            }
+
+            .button {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+
+            .progress-bar {
+                width: 100%;
+                height: 20px;
+                background-color: #f0f0f0;
+                border-radius: 10px;
+                overflow: hidden;
+                margin: 10px 0;
+            }
+            
+            #progressFill {
+                width: 0%;
+                height: 100%;
+                background-color: #4a90e2;
+                transition: width 0.3s ease;
+            }
+            
+            #startExperimentBtn[disabled] {
+                background-color: #cccccc;
+                cursor: not-allowed;
+            }
+        }
+    
+        /* 添加到您的CSS中 */
+        .click-area.selected {
+            background-color: rgba(76, 175, 80, 0.3);
+            border: 3px solid #4CAF50;
+        }
+
+        /* 添加过渡效果 */
+        .click-area {
+            transition: all 0.2s ease;
+        }
+
+        /* 添加图片名称显示区域的样式 */
+        .image-name-container {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+
+        .image-name {
+            color: #aaa;
+            font-size: 14px;
+            margin-right: 10px;
+            font-style: italic;
+        }
+
+        .toggle-name-btn {
+            background-color: #e0e0e0;
+            color: #888;
+            border: none;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-name-btn:hover {
+            background-color: #d0d0d0;
+        }
+
+        /* 修改朗读按钮样式为可拖动悬浮按钮 */
+        .read-name-btn {
+            display: none;
+        }
+
+        /* 添加新的音频控制按钮样式 */
+        .audio-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .audio-btn {
+            background-color: #f5f5f5;
+            color: #757575;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .audio-btn i {
+            margin-right: 6px;
+        }
+
+        .audio-btn.active {
+            background-color: #e8f5e9;
+            color: #558b2f;
+            border-color: #c8e6c9;
+        }
+
+        .audio-btn:hover {
+            background-color: #eeeeee;
+        }
+
+        .audio-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- User Info Section -->
+        <div id="userInfoSection" class="section active">
+            <h2>用户信息</h2>
+            <form id="userInfoForm">
+                <div class="form-group">
+                    <label for="name">姓名：</label>
+                    <input type="text" id="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="gender">性别：</label>
+                    <select id="gender" required>
+                        <option value="male">男</option>
+                        <option value="female">女</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="birthday">出生日期：</label>
+                    <input type="date" id="birthday" required>
+                </div>
+                <div class="form-group">
+                    <label for="kindergarten">幼儿园：</label>
+                    <input type="text" id="kindergarten" required>
+                </div>
+                <div class="form-group">
+                    <label for="class">班级：</label>
+                    <input type="text" id="class" required>
+                </div>
+                <button type="submit" class="button">开始实验</button>
+            </form>
+        </div>
+
+        <!-- Introduction Section -->
+        <div id="introSection" class="section">
+            <h2>实验介绍</h2>
+            <p>在接下来的实验中，您将看到一系列包含4个图案的图片。请根据提示选择正确的图案。</p>
+            <div id="loadingStatus" style="margin: 20px 0;">
+                <p>资源加载中...</p>
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>图片: <span id="imageLoadingProgress">0</span>/58</span>
+                            <span id="imageLoadingPercent">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="imageProgressFill" style="width: 0%; background-color: #4CAF50;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>音频: <span id="audioLoadingProgress">0</span>/58</span>
+                            <span id="audioLoadingPercent">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="audioProgressFill" style="width: 0%; background-color: #2196F3;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>总进度:</span>
+                            <span id="totalLoadingPercent">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="totalProgressFill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+                <p id="loadingMessage" style="margin-top: 10px; font-style: italic; color: #666;">正在准备资源...</p>
+            </div>
+            <button class="button" id="startExperimentBtn" disabled>开始</button>
+        </div>
+
+        <!-- Trial Section -->
+        <div id="trialSection" class="section">
+            <!-- 图片容器 -->
+            <div class="trial-container">
+                <img 
+                    id="trialImage" 
+                    class="trial-image no-drag" 
+                    loading="eager"  
+                    alt="试次图片"
+                    width="1200"
+                    height="900"
+                    draggable="false"
+                >
+                <!-- 点击区域 -->
+                <div class="click-area top-left" onclick="selectOption(1)"></div>
+                <div class="click-area top-right" onclick="selectOption(2)"></div>
+                <div class="click-area bottom-left" onclick="selectOption(3)"></div>
+                <div class="click-area bottom-right" onclick="selectOption(4)"></div>
+                <!-- 视觉提示按钮 -->
+                <button class="select-button top-left no-drag">1</button>
+                <button class="select-button top-right no-drag">2</button>
+                <button class="select-button bottom-left no-drag">3</button>
+                <button class="select-button bottom-right no-drag">4</button>
+            </div>
+            
+            <!-- 替换原有的悬浮按钮为固定位置的两个按钮 -->
+            <div class="audio-controls">
+                <button id="autoReadBtn" class="audio-btn active">
+                    <i class="fas fa-volume-up"></i> 自动朗读：开启
+                </button>
+                <button id="readOnceBtn" class="audio-btn">
+                    <i class="fas fa-play"></i> 朗读一次
+                </button>
+            </div>
+            
+            <!-- 将标题和退出按钮移到图片下方 -->
+            <div class="trial-header">
+                <div class="trial-number no-drag" id="trialNumber"></div>
+                <button id="exitButton" class="exit-button">停止退出</button>
+            </div>
+
+            <!-- 在trial-container后添加图片名称显示区域 -->
+            <div class="image-name-container">
+                <span id="imageName" class="image-name" style="display: none;"></span>
+                <button id="toggleNameBtn" class="toggle-name-btn">显示图片名称</button>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="section">
+            <h2>实验结束</h2>
+            <button class="button" onclick="exportToExcel()">下载数据</button>
+            <button class="button" onclick="copyResults()">复制结果</button>
+            <button class="button" onclick="showResults()">查看结果</button>
+            <button class="button" onclick="restartExperiment()">重新开始</button>
+            <div id="resultsDisplay"></div>
+            <div id="resultsSection" class="section"></div>
+        </div>
+    </div>
+
+    <script>
+        // 实验数据
+        const correctAnswers = {
+            1: 4, 2: 1, 3: 3, 4: 3, 5: 2, 6: 3, 7: 3, 8: 3, 9: 2, 10: 3,
+            11: 2, 12: 4, 13: 2, 14: 2, 15: 4, 16: 3, 17: 1, 18: 2, 19: 1, 20: 1,
+            21: 4, 22: 3, 23: 1, 24: 3, 25: 1, 26: 2, 27: 2, 28: 1, 29: 3, 30: 2,
+            31: 3, 32: 3, 33: 1, 34: 4, 35: 1, 36: 4, 37: 2, 38: 1, 39: 1, 40: 2,
+            41: 2, 42: 4, 43: 1, 44: 2, 45: 1, 46: 4, 47: 4, 48: 4, 49: 4, 50: 3,
+            51: 4, 52: 3, 53: 4, 54: 1, 55: 4, 56: 2, 57: 3, 58: 1
+        };
+
+        // 添加图片名称数组
+        const imageNames = [
+            "陀螺", "北极", "棉花", "陆地", "风扇", "水母", "漂浮", "辛苦", "灯塔", "鹦鹉",
+            "货车", "足球", "扳手", "降落伞", "钻", "蚯蚓", "搬起", "干瘪", "瀑布", "禾苗",
+            "田野", "攀登", "鞠躬", "信号塔", "电器类", "绿洲", "浸泡", "害羞", "晴朗", "伐木",
+            "条幅", "日常用品", "乐手", "圆珠笔", "陡峭", "铜号", "剥夺", "呆滞", "刻苦", "憔悴",
+            "工匠", "石桥", "化肥", "阀门", "慈祥", "银河", "喧哗", "装配", "云梯", "争论",
+            "沉思", "酿造", "冲毁", "盘旋", "私语", "鉴定", "眺望", "剪纸"
+        ];
+
+        // 初始化实验数据结构
+        let experimentData = {
+            userInfo: null,
+            trials: [],
+            currentTrial: 0,
+            startTime: null
+        };
+
+        // 修改音频预加载函数
+        function preloadAudio() {
+            return new Promise((resolve) => {
+                let loadedCount = 0;
+                const totalAudios = 58;
+                const preloadedAudios = [];
+                
+                function updateProgress() {
+                    // 更新音频加载进度
+                    const percent = Math.round(loadedCount / totalAudios * 100);
+                    document.getElementById('audioLoadingProgress').textContent = loadedCount;
+                    document.getElementById('audioLoadingPercent').textContent = percent + '%';
+                    document.getElementById('audioProgressFill').style.width = percent + '%';
+                    
+                    // 更新总进度
+                    updateTotalProgress();
+                    
+                    // 更新加载消息
+                    if (loadedCount === totalAudios) {
+                        document.getElementById('loadingMessage').textContent = '音频加载完成！';
+                        resolve(preloadedAudios);
+                    } else {
+                        document.getElementById('loadingMessage').textContent = `正在加载音频文件 ${loadedCount}/${totalAudios}...`;
+                    }
+                }
+
+                for (let i = 1; i <= totalAudios; i++) {
+                    const audio = new Audio();
+                    audio.oncanplaythrough = function() {
+                        loadedCount++;
+                        preloadedAudios[i-1] = this;
+                        updateProgress();
+                    };
+                    audio.onerror = function() {
+                        loadedCount++;
+                        console.error(`Failed to load sound/${i}.mp3`);
+                        updateProgress();
+                    };
+                    audio.src = `sound/${i}.mp3`;
+                    audio.load();
+                }
+            });
+        }
+
+        // 修改图片预加载函数
+        function preloadImages() {
+            return new Promise((resolve) => {
+                let loadedCount = 0;
+                const totalImages = 58;
+                const preloadedImages = [];
+                
+                function updateProgress() {
+                    // 更新图片加载进度
+                    const percent = Math.round(loadedCount / totalImages * 100);
+                    document.getElementById('imageLoadingProgress').textContent = loadedCount;
+                    document.getElementById('imageLoadingPercent').textContent = percent + '%';
+                    document.getElementById('imageProgressFill').style.width = percent + '%';
+                    
+                    // 更新总进度
+                    updateTotalProgress();
+                    
+                    // 更新加载消息
+                    if (loadedCount === totalImages) {
+                        document.getElementById('loadingMessage').textContent = '图片加载完成！';
+                        resolve(preloadedImages);
+                    } else {
+                        document.getElementById('loadingMessage').textContent = `正在加载图片 ${loadedCount}/${totalImages}...`;
+                    }
+                }
+
+                for (let i = 1; i <= totalImages; i++) {
+                    const img = new Image();
+                    img.onload = function() {
+                        loadedCount++;
+                        preloadedImages[i-1] = this;
+                        updateProgress();
+                    };
+                    img.onerror = function() {
+                        loadedCount++;
+                        console.error(`Failed to load image/image_${i}`);
+                        updateProgress();
+                    };
+                    img.src = `image/image_${i}.png`;
+                }
+            });
+        }
+
+        // 添加总进度更新函数
+        function updateTotalProgress() {
+            const imageProgress = parseInt(document.getElementById('imageLoadingProgress').textContent) || 0;
+            const audioProgress = parseInt(document.getElementById('audioLoadingProgress').textContent) || 0;
+            
+            const totalPercent = Math.round((imageProgress + audioProgress) / (58 * 2) * 100);
+            document.getElementById('totalLoadingPercent').textContent = totalPercent + '%';
+            document.getElementById('totalProgressFill').style.width = totalPercent + '%';
+            
+            // 如果总进度达到100%，更新消息
+            if (totalPercent === 100) {
+                document.getElementById('loadingMessage').textContent = '所有资源加载完成，可以开始实验！';
+            }
+        }
+
+        // 添加自动朗读状态变量
+        let autoReadEnabled = true;
+        let currentAudio = null;
+
+        // 修改朗读功能，使用预先录制的音频文件
+        function readImageName(repeatCount = 1) {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+            
+            const currentTrialNumber = experimentData.currentTrial;
+            if (currentTrialNumber >= 1 && currentTrialNumber <= 58) {
+                playAudio(currentTrialNumber, repeatCount);
+            }
+        }
+
+        // 播放音频文件
+        function playAudio(audioNumber, repeatCount = 1) {
+            if (audioNumber < 1 || audioNumber > 58) return;
+            
+            currentAudio = new Audio(`sound/${audioNumber}.mp3`);
+            let playCount = 0;
+            
+            currentAudio.onended = function() {
+                playCount++;
+                if (playCount < repeatCount) {
+                    // 间隔0.2秒后再次播放
+                    setTimeout(() => {
+                        currentAudio.currentTime = 0;
+                        currentAudio.play().catch(e => console.error("播放音频失败:", e));
+                    }, 200);
+                }
+            };
+            
+            currentAudio.play().catch(e => console.error("播放音频失败:", e));
+        }
+
+        // 修改显示试次函数，添加自动朗读
+        function showTrial() {
+            console.log(`显示试次 ${experimentData.currentTrial}`);
+            
+            if (experimentData.currentTrial > 58) {
+                endExperiment();
+                return;
+            }
+            
+            // 停止任何正在播放的音频
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+            
+            document.getElementById('trialNumber').textContent = `试次 ${experimentData.currentTrial}/58`;
+            
+            // 更新图片名称
+            document.getElementById('imageName').textContent = `图片名称: ${imageNames[experimentData.currentTrial-1]}`;
+            
+            const trialData = {
+                trialNumber: experimentData.currentTrial,
+                startTime: new Date(),
+                selected: null,
+                correct: null,
+                duration: null
+            };
+            
+            experimentData.trials.push(trialData);
+            saveData();
+
+            // 修正图片加载
+            const img = document.getElementById('trialImage');
+            if (!img) {
+                console.error("找不到图片元素");
+                return;
+            }
+            
+            // 确保图片路径正确
+            const imgPath = `image/image_${experimentData.currentTrial}.png`;
+            console.log(`加载图片: ${imgPath}`);
+            img.src = imgPath;
+            
+            // 图片加载完成后自动朗读
+            img.onload = function() {
+                console.log("图片加载完成");
+                // 短暂延迟确保界面已更新
+                if (autoReadEnabled) {
+                    // 第一个试次延迟2秒播放，其他试次正常播放
+                    if (experimentData.currentTrial === 1) {
+                        setTimeout(() => {
+                            readImageName(2); // 朗读两次
+                        }, 2000);
+                    } else {
+                        setTimeout(() => {
+                            readImageName(2); // 朗读两次
+                        }, 300);
+                    }
+                }
+            };
+            
+            img.onerror = function() {
+                console.error(`图片加载失败: ${imgPath}`);
+            };
+        }
+
+        // 从localStorage加载数据
+        function loadSavedData() {
+            const savedData = localStorage.getItem('experimentData');
+            if (savedData) {
+                experimentData = JSON.parse(savedData);
+                return true;
+            }
+            return false;
+        }
+
+        // 保存数据到localStorage
+        function saveData() {
+            localStorage.setItem('experimentData', JSON.stringify(experimentData));
+        }
+
+        // 修改用户信息表单提交处理，并行加载图片和音频
+        document.getElementById('userInfoForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            experimentData.userInfo = {
+                name: document.getElementById('name').value,
+                gender: document.getElementById('gender').value,
+                birthday: document.getElementById('birthday').value,
+                kindergarten: document.getElementById('kindergarten').value,
+                class: document.getElementById('class').value
+            };
+            saveData();
+            showSection('introSection');
+            
+            // 开始预加载图片和音频
+            document.getElementById('startExperimentBtn').disabled = true;
+            document.getElementById('loadingMessage').textContent = '正在准备加载资源...';
+            
+            try {
+                // 添加超时保护，防止加载卡死
+                const loadTimeout = setTimeout(() => {
+                    console.warn('资源加载超时，强制启用开始按钮');
+                    document.getElementById('startExperimentBtn').disabled = false;
+                    document.getElementById('loadingMessage').textContent = '资源加载超时，但您仍可以开始实验';
+                }, 30000); // 30秒超时
+                
+                // 并行加载图片和音频
+                await Promise.all([preloadImages(), preloadAudio()]);
+                
+                // 清除超时
+                clearTimeout(loadTimeout);
+                
+                // 确保进度显示为100%
+                document.getElementById('totalLoadingPercent').textContent = '100%';
+                document.getElementById('totalProgressFill').style.width = '100%';
+                document.getElementById('loadingMessage').textContent = '所有资源加载完成，可以开始实验！';
+                
+                // 加载完成后启用开始按钮
+                document.getElementById('startExperimentBtn').disabled = false;
+            } catch (error) {
+                console.error('资源加载出错:', error);
+                // 出错时也启用开始按钮
+                document.getElementById('startExperimentBtn').disabled = false;
+                document.getElementById('loadingMessage').textContent = '部分资源加载失败，但您仍可以开始实验';
+                alert('部分资源加载失败，但您仍可以开始实验。可能会影响音频播放。');
+            }
+        });
+
+        // 全局变量，用于跟踪是否可以点击
+        let clickEnabled = true;
+
+        // 修改后的 selectOption 函数
+        function selectOption(option) {
+            if (!clickEnabled) return;
+            clickEnabled = false;
+            
+            // 停止任何正在播放的音频
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+            
+            // 添加视觉反馈 - 高亮被选中的区域
+            const selectedArea = document.querySelector(`.click-area[data-option="${option}"]`);
+            
+            // 添加高亮样式
+            if (selectedArea) {
+                selectedArea.classList.add('selected');
+            }
+            
+            // 记录当前试次的数据
+            const currentTrialData = experimentData.trials[experimentData.trials.length - 1];
+            currentTrialData.selected = option;
+            currentTrialData.correct = option === correctAnswers[experimentData.currentTrial];
+            currentTrialData.endTime = new Date();
+            currentTrialData.duration = currentTrialData.endTime - currentTrialData.startTime;
+            
+            // 增加试次计数
+            experimentData.currentTrial++;
+            saveData();
+            
+            // 在清除图片前添加短暂延迟，让用户看到反馈
+            setTimeout(() => {
+                // 移除高亮样式
+                if (selectedArea) {
+                    selectedArea.classList.remove('selected');
+                }
+                
+                // 清除当前图片
+                const img = document.getElementById('trialImage');
+                img.src = '';
+                
+                // 显示下一个试次
+                setTimeout(() => {
+                    showTrial();
+                    
+                    // 在新试次加载后重新启用点击
+                    setTimeout(() => {
+                        clickEnabled = true;
+                        document.querySelectorAll('.click-area').forEach(area => {
+                            area.style.pointerEvents = 'auto';
+                        });
+                    }, 500);
+                }, 100);
+            }, 300);
+        }
+
+        function endExperiment() {
+            if (!experimentData || !experimentData.trials || experimentData.trials.length === 0) {
+                alert('没有可用的实验数据');
+                return;
+            }
+            
+            try {
+                // 保存完整数据到 localStorage，以备后续使用
+                localStorage.setItem('completedExperimentData', JSON.stringify(experimentData));
+                showSection('resultsSection');
+                exportToExcel();
+                // 移除这行：clearExperimentData(); 
+            } catch (error) {
+                console.error('结束实验时出错:', error);
+                alert('处理实验数据时出错，请联系管理员');
+            }
+        }
+
+        function validateExperimentData() {
+            // 如果当前 experimentData 无效，尝试从 localStorage 恢复
+            if (!experimentData || !experimentData.userInfo || !experimentData.trials || experimentData.trials.length === 0) {
+                const savedData = localStorage.getItem('completedExperimentData');
+                if (savedData) {
+                    experimentData = JSON.parse(savedData);
+                }
+            }
+            
+            if (!experimentData || !experimentData.userInfo || !experimentData.trials || experimentData.trials.length === 0) {
+                throw new Error('实验数据无效或不完整');
+            }
+            return true;
+        }
+
+        // 导出Excel
+        function exportToExcel() {
+            try {
+                const wb = XLSX.utils.book_new();
+                
+                // 参与者信息表
+                const participantData = [{
+                    姓名: experimentData.userInfo.name,
+                    性别: experimentData.userInfo.gender === 'male' ? '男' : '女',
+                    出生日期: experimentData.userInfo.birthday,
+                    班级: experimentData.userInfo.class,
+                    幼儿园: experimentData.userInfo.kindergarten,
+                    实验时间: experimentData.startTime.toLocaleString()
+                }];
+                const wsParticipant = XLSX.utils.json_to_sheet(participantData);
+                XLSX.utils.book_append_sheet(wb, wsParticipant, "参与者信息");
+
+                // 实验数据表
+                const trialData = experimentData.trials.map(trial => ({
+                    试次: trial.trialNumber,
+                    选择答案: trial.selected,
+                    正确答案: correctAnswers[trial.trialNumber],
+                    是否正确: trial.correct ? '正确' : '错误',
+                    反应时间_毫秒: trial.duration
+                }));
+                const wsTrials = XLSX.utils.json_to_sheet(trialData);
+                XLSX.utils.book_append_sheet(wb, wsTrials, "实验数据");
+
+                // 汇总数据
+                const totalCorrect = experimentData.trials.filter(t => t.correct).length;
+                const totalTime = experimentData.trials.reduce((sum, t) => sum + t.duration, 0);
+                const summaryData = [{
+                    总正确数: totalCorrect,
+                    正确率: (totalCorrect / 58 * 100).toFixed(2) + '%',
+                    平均反应时间_毫秒: Math.round(totalTime / 58),
+                    总时间_毫秒: totalTime
+                }];
+                const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+                XLSX.utils.book_append_sheet(wb, wsSummary, "汇总数据");
+
+                // 生成文件名
+                const fileName = `词语实验_${experimentData.userInfo.name}_${experimentData.userInfo.birthday}_${experimentData.userInfo.kindergarten}.xlsx`;
+                
+                // 导出文件
+                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([wbout], { 
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+                });
+                saveAs(blob, fileName);
+
+            } catch (error) {
+                console.error('Excel导出错误:', error);
+                alert('Excel导出失败，请重试');
+            }
+        }
+
+        // 复制结果
+        function copyResults() {
+            try {
+                validateExperimentData();
+                
+                const totalCorrect = experimentData.trials.filter(t => t.correct).length;
+                const totalTime = experimentData.trials.reduce((sum, t) => sum + t.duration, 0);
+            
+            const results = `
+                实验结果：
+                参与者：${experimentData.userInfo.name}
+                正确数量：${totalCorrect}/58
+                正确率：${(totalCorrect / 58 * 100).toFixed(2)}%
+                平均反应时间：${Math.round(totalTime / 58)}毫秒
+                总时间：${Math.round(totalTime)}毫秒
+                            `.trim();
+
+            // 创建临时textarea来复制文本
+            const textarea = document.createElement('textarea');
+            textarea.value = results;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            
+            alert('结果已复制到剪贴板！');
+            } catch (error) {
+                console.error('复制结果时出错:', error);
+                alert('复制数据失败：' + error.message);
+            }   
+        }
+
+        // 显示结果
+        function showResults() {
+            try {
+                validateExperimentData();
+                
+                const resultsDisplay = document.getElementById('resultsDisplay');
+                if (!resultsDisplay) {
+                    throw new Error('未找到结果显示区域元素');
+                }
+        
+                // 添加加载提示
+                resultsDisplay.innerHTML = '<p>正在加载结果...</p>';
+                
+                // 计算统计数据
+                const totalCorrect = experimentData.trials.filter(t => t.correct).length;
+                const totalTime = experimentData.trials.reduce((sum, t) => sum + t.duration, 0);
+                
+                // 构建结果HTML
+                const resultsHTML = `
+                    <div class="results-container" style="padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="color: #2c3e50; margin-bottom: 20px;">实验结果摘要</h3>
+                        <div style="margin-bottom: 20px;">
+                            <p><strong>参与者：</strong>${experimentData.userInfo.name}</p>
+                            <p><strong>正确数量：</strong>${totalCorrect}/58</p>
+                            <p><strong>正确率：</strong>${(totalCorrect / 58 * 100).toFixed(2)}%</p>
+                            <p><strong>平均反应时间：</strong>${Math.round(totalTime / 58)}毫秒</p>
+                            <p><strong>总时间：</strong>${Math.round(totalTime)}毫秒</p>
+                        </div>
+                        
+                        <h4 style="color: #2c3e50; margin: 20px 0;">详细数据</h4>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                                <thead>
+                                    <tr style="background-color: #f8f9fa;">
+                                        <th style="padding: 12px; border: 1px solid #dee2e6; text-align: center;">试次</th>
+                                        <th style="padding: 12px; border: 1px solid #dee2e6; text-align: center;">选择</th>
+                                        <th style="padding: 12px; border: 1px solid #dee2e6; text-align: center;">正确答案</th>
+                                        <th style="padding: 12px; border: 1px solid #dee2e6; text-align: center;">是否正确</th>
+                                        <th style="padding: 12px; border: 1px solid #dee2e6; text-align: center;">反应时间(毫秒)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${experimentData.trials.map(trial => `
+                                        <tr style="background-color: ${trial.correct ? '#f0fff0' : '#fff0f0'}">
+                                            <td style="padding: 8px; border: 1px solid #dee2e6; text-align: center;">${trial.trialNumber}</td>
+                                            <td style="padding: 8px; border: 1px solid #dee2e6; text-align: center;">${trial.selected}</td>
+                                            <td style="padding: 8px; border: 1px solid #dee2e6; text-align: center;">${correctAnswers[trial.trialNumber]}</td>
+                                            <td style="padding: 8px; border: 1px solid #dee2e6; text-align: center;">${trial.correct ? '✓' : '✗'}</td>
+                                            <td style="padding: 8px; border: 1px solid #dee2e6; text-align: center;">${trial.duration}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+                // 设置结果HTML
+                resultsDisplay.innerHTML = resultsHTML;
+                
+                // 滚动到结果区域
+                resultsDisplay.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                console.log('结果已显示');
+            } catch (error) {
+                console.error('显示结果时出错:', error);
+                const errorMsg = `
+                    <div style="padding: 20px; background: #fff0f0; border-radius: 8px; color: #dc3545;">
+                        <h3>显示结果时出错</h3>
+                        <p>${error.message}</p>
+                        <p>请尝试刷新页面或联系管理员</p>
+                    </div>
+                `;
+                document.getElementById('resultsDisplay').innerHTML = errorMsg;
+            }
+        }
+        
+        // 切换显示部分
+        function showSection(sectionId) {
+            console.log(`切换到部分: ${sectionId}`);
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            } else {
+                console.error(`找不到目标部分: ${sectionId}`);
+            }
+        }
+
+        // 重新开始实验
+        function restartExperiment() {
+            if (confirm('确定要重新开始吗？当前实验数据将不可恢复。')) {
+                // 清除所有存储的数据
+                localStorage.removeItem('experimentData');
+                localStorage.removeItem('completedExperimentData');
+                
+                // 重置当前会话的 experimentData
+                experimentData = {
+                    userInfo: null,
+                    trials: [],
+                    currentTrial: 0,
+                    startTime: null
+                };
+                
+                showSection('userInfoSection');
+            }
+        }
+
+        // 清除保存的实验数据
+        function clearExperimentData() {
+            localStorage.removeItem('experimentData');
+            experimentData = {
+                userInfo: null,
+                trials: [],
+                currentTrial: 0,
+                startTime: null
+            };
+        }        
+
+         // 只在实验试次部分添加防拖动功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const trialSection = document.getElementById('trialSection');
+            
+            // 只在实验试次部分阻止拖动和右键菜单
+            trialSection.addEventListener('dragstart', function(e) {
+                e.preventDefault();
+            });
+    
+            trialSection.addEventListener('mousedown', function(e) {
+                // 只在点击图片或按钮时阻止默认行为
+                if (e.target.classList.contains('trial-image') || 
+                    e.target.classList.contains('select-button')) {
+                    e.preventDefault();
+                }
+            });
+    
+            trialSection.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+            });
+        });
+
+        // 添加开始实验按钮的事件监听器
+        document.addEventListener('DOMContentLoaded', function() {
+            // 其他现有的DOMContentLoaded代码...
+            
+            // 重新绑定开始实验按钮事件
+            const startBtn = document.getElementById('startExperimentBtn');
+            if (startBtn) {
+                startBtn.addEventListener('click', function() {
+                    console.log("开始按钮被点击");
+                    startExperiment();
+                });
+            } else {
+                console.error("找不到开始实验按钮");
+            }
+        });
+        
+        // 在window.onload中添加事件监听器
+        window.onload = function() {
+            const completedData = localStorage.getItem('completedExperimentData');
+            const inProgressData = localStorage.getItem('experimentData');
+            
+            if (completedData) {
+                experimentData = JSON.parse(completedData);
+                showSection('resultsSection');
+            } else if (inProgressData) {
+                const data = JSON.parse(inProgressData);
+                if (data.userInfo) {
+                    // 如果有用户信息，说明实验已经开始过
+                    experimentData = data;
+                    
+                    // 如果当前试次有效，继续实验
+                    if (data.currentTrial > 0 && data.currentTrial <= 58) {
+                        showSection('trialSection');
+                        showTrial();
+                    } else {
+                        // 否则回到用户信息页面
+                        showSection('userInfoSection');
+                    }
+                } else {
+                    clearExperimentData();
+                    showSection('userInfoSection');
+                }
+            } else {
+                showSection('userInfoSection');
+            }
+            
+            // 添加自动朗读按钮事件
+            document.getElementById('autoReadBtn').addEventListener('click', function() {
+                autoReadEnabled = !autoReadEnabled;
+                
+                if (autoReadEnabled) {
+                    this.classList.add('active');
+                    this.innerHTML = '<i class="fas fa-volume-up"></i> 自动朗读：开启';
+                    // 如果当前在试次中，立即朗读
+                    if (experimentData.currentTrial > 0 && experimentData.currentTrial <= 58) {
+                        readImageName(2);
+                    }
+                } else {
+                    this.classList.remove('active');
+                    this.innerHTML = '<i class="fas fa-volume-mute"></i> 自动朗读：关闭';
+                    // 停止任何正在播放的音频
+                    if (currentAudio) {
+                        currentAudio.pause();
+                        currentAudio.currentTime = 0;
+                    }
+                }
+            });
+            
+            // 添加朗读一次按钮事件
+            document.getElementById('readOnceBtn').addEventListener('click', function() {
+                if (experimentData.currentTrial > 0 && experimentData.currentTrial <= 58) {
+                    readImageName(1); // 只朗读一次
+                }
+            });
+
+            // 为点击区域添加data-option属性
+            document.querySelectorAll('.click-area').forEach((area, index) => {
+                area.setAttribute('data-option', index + 1);
+            });
+        };
+
+        // 添加页面关闭前的保存提醒
+        window.onbeforeunload = function() {
+            if (experimentData.currentTrial > 0 && experimentData.currentTrial <= 58) {
+                return "实验尚未完成，确定要离开吗？";
+            }
+        };
+
+        // 添加退出按钮的事件监听器
+        document.getElementById('exitButton').addEventListener('click', function() {
+            if (confirm('确定要停止实验并退出吗？您可以稍后继续，或者选择重新开始。')) {
+                showExitOptions();
+            }
+        });
+
+        // 修改退出选项函数，移除"稍后继续"选项
+        function showExitOptions() {
+            // 创建退出选项对话框
+            const exitDialog = document.createElement('div');
+            exitDialog.className = 'exit-dialog';
+            exitDialog.style.position = 'fixed';
+            exitDialog.style.top = '50%';
+            exitDialog.style.left = '50%';
+            exitDialog.style.transform = 'translate(-50%, -50%)';
+            exitDialog.style.background = 'white';
+            exitDialog.style.padding = '20px';
+            exitDialog.style.borderRadius = '8px';
+            exitDialog.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+            exitDialog.style.zIndex = '1000';
+            exitDialog.style.minWidth = '300px';
+            exitDialog.style.textAlign = 'center';
+            
+            exitDialog.innerHTML = `
+                <h3 style="margin-bottom: 20px; color: #2c3e50;">请选择操作</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button id="restartBtn" class="button" style="background: #ff5252;">重新开始</button>
+                    <button id="cancelBtn" class="button" style="background: #95a5a6;">取消</button>
+                </div>
+            `;
+            
+            // 添加遮罩层
+            const overlay = document.createElement('div');
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.background = 'rgba(0,0,0,0.5)';
+            overlay.style.zIndex = '999';
+            
+            document.body.appendChild(overlay);
+            document.body.appendChild(exitDialog);
+            
+            // 添加按钮事件
+            document.getElementById('restartBtn').addEventListener('click', function() {
+                if (confirm('确定要重新开始吗？当前实验数据将不可恢复。')) {
+                    // 清除所有存储的数据
+                    localStorage.removeItem('experimentData');
+                    localStorage.removeItem('completedExperimentData');
+                    
+                    // 重置当前会话的 experimentData
+                    experimentData = {
+                        userInfo: null,
+                        trials: [],
+                        currentTrial: 0,
+                        startTime: null
+                    };
+                    
+                    document.body.removeChild(exitDialog);
+                    document.body.removeChild(overlay);
+                    showSection('userInfoSection');
+                }
+            });
+            
+            document.getElementById('cancelBtn').addEventListener('click', function() {
+                // 关闭对话框，继续实验
+                document.body.removeChild(exitDialog);
+                document.body.removeChild(overlay);
+            });
+        }
+
+        // 添加到window.onload中
+        document.getElementById('toggleNameBtn').addEventListener('click', function() {
+            const imageNameElem = document.getElementById('imageName');
+            if (imageNameElem.style.display === 'none') {
+                imageNameElem.style.display = 'inline';
+                this.textContent = '隐藏图片名称';
+            } else {
+                imageNameElem.style.display = 'none';
+                this.textContent = '显示图片名称';
+            }
+        });
+
+        // 修复开始实验函数
+        function startExperiment() {
+            console.log("开始实验函数被调用");
+            experimentData.trials = []; 
+            experimentData.currentTrial = 1;
+            experimentData.startTime = new Date();
+            saveData();
+            
+            // 确保试次部分被正确显示
+            showSection('trialSection');
+            
+            // 添加延迟确保DOM更新后再显示试次
+            setTimeout(() => {
+                showTrial();
+                console.log("显示第一个试次");
+            }, 100);
+        }
+    </script>
+</body>
+</html>
