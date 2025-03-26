@@ -441,19 +441,15 @@
                     <label for="class">班级：</label>
                     <input type="text" id="class" required>
                 </div>
-                <button type="submit" class="button">开始实验</button>
+                <button type="submit" class="button" id="submitUserInfoBtn">开始实验</button>
             </form>
-        </div>
-
-        <!-- Introduction Section -->
-        <div id="introSection" class="section">
-            <h2>实验介绍</h2>
-            <p>在接下来的实验中，您将看到一系列包含4个图案的图片。请根据提示选择正确的图案。</p>
-            <div id="loadingStatus" style="margin: 20px 0;">
-                <p>资源加载中...</p>
-                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+            
+            <!-- 添加资源加载状态到用户信息页面底部 -->
+            <div id="loadingStatus" style="margin: 30px 0 10px 0; border-top: 1px solid #eee; padding-top: 20px;">
+                <p style="font-size: 14px; color: #666; margin-bottom: 10px;">资源准备中...</p>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
                     <div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px;">
                             <span>图片: <span id="imageLoadingProgress">0</span>/58</span>
                             <span id="imageLoadingPercent">0%</span>
                         </div>
@@ -462,7 +458,7 @@
                         </div>
                     </div>
                     <div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px;">
                             <span>音频: <span id="audioLoadingProgress">0</span>/58</span>
                             <span id="audioLoadingPercent">0%</span>
                         </div>
@@ -471,7 +467,7 @@
                         </div>
                     </div>
                     <div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px;">
                             <span>总进度:</span>
                             <span id="totalLoadingPercent">0%</span>
                         </div>
@@ -480,9 +476,20 @@
                         </div>
                     </div>
                 </div>
-                <p id="loadingMessage" style="margin-top: 10px; font-style: italic; color: #666;">正在准备资源...</p>
+                <p id="loadingMessage" style="margin-top: 10px; font-style: italic; color: #666; font-size: 12px;">正在准备资源...</p>
             </div>
-            <button class="button" id="startExperimentBtn" disabled>开始</button>
+        </div>
+
+        <!-- Introduction Section -->
+        <div id="introSection" class="section">
+            <h2>实验说明</h2>
+            <div style="text-align: center; padding: 20px; font-size: 18px; line-height: 1.6;">
+                <p style="margin-bottom: 20px;">小朋友，你好！</p>
+                <p style="margin-bottom: 20px;">我们将一起玩一个有趣的图片游戏。</p>
+                <p style="margin-bottom: 20px;">你会看到四张小图片，请听清楚老师说的词语，然后点击对应的图片。</p>
+                <p style="margin-bottom: 30px;">准备好了吗？让我们开始吧！</p>
+            </div>
+            <button class="button" id="startExperimentBtn">开始游戏</button>
         </div>
 
         <!-- Trial Section -->
@@ -762,15 +769,15 @@
                 console.log("图片加载完成");
                 // 短暂延迟确保界面已更新
                 if (autoReadEnabled) {
-                    // 第一个试次延迟2秒播放，其他试次正常播放
+                    // 第一个试次延迟1.2秒播放，其他试次正常播放
                     if (experimentData.currentTrial === 1) {
                         setTimeout(() => {
                             readImageName(2); // 朗读两次
-                        }, 2000);
+                        }, 1200);
                     } else {
                         setTimeout(() => {
                             readImageName(2); // 朗读两次
-                        }, 300);
+                        }, 150);
                     }
                 }
             };
@@ -795,8 +802,8 @@
             localStorage.setItem('experimentData', JSON.stringify(experimentData));
         }
 
-        // 修改用户信息表单提交处理，并行加载图片和音频
-        document.getElementById('userInfoForm').addEventListener('submit', async function(e) {
+        // 修改用户信息表单提交处理
+        document.getElementById('userInfoForm').addEventListener('submit', function(e) {
             e.preventDefault();
             experimentData.userInfo = {
                 name: document.getElementById('name').value,
@@ -808,38 +815,7 @@
             saveData();
             showSection('introSection');
             
-            // 开始预加载图片和音频
-            document.getElementById('startExperimentBtn').disabled = true;
-            document.getElementById('loadingMessage').textContent = '正在准备加载资源...';
-            
-            try {
-                // 添加超时保护，防止加载卡死
-                const loadTimeout = setTimeout(() => {
-                    console.warn('资源加载超时，强制启用开始按钮');
-                    document.getElementById('startExperimentBtn').disabled = false;
-                    document.getElementById('loadingMessage').textContent = '资源加载超时，但您仍可以开始实验';
-                }, 120000); // 120秒超时
-                
-                // 并行加载图片和音频
-                await Promise.all([preloadImages(), preloadAudio()]);
-                
-                // 清除超时
-                clearTimeout(loadTimeout);
-                
-                // 确保进度显示为100%
-                document.getElementById('totalLoadingPercent').textContent = '100%';
-                document.getElementById('totalProgressFill').style.width = '100%';
-                document.getElementById('loadingMessage').textContent = '所有资源加载完成，可以开始实验！';
-                
-                // 加载完成后启用开始按钮
-                document.getElementById('startExperimentBtn').disabled = false;
-            } catch (error) {
-                console.error('资源加载出错:', error);
-                // 出错时也启用开始按钮
-                document.getElementById('startExperimentBtn').disabled = false;
-                document.getElementById('loadingMessage').textContent = '部分资源加载失败，但您仍可以开始实验';
-                alert('部分资源加载失败，但您仍可以开始实验。可能会影响音频播放。');
-            }
+            // 不再在这里开始预加载，因为已经在页面加载时开始了
         });
 
         // 全局变量，用于跟踪是否可以点击
@@ -1165,6 +1141,55 @@
             });
         });
 
+        // 修改：页面加载时立即开始预加载资源
+        document.addEventListener('DOMContentLoaded', function() {
+            // 开始预加载图片和音频
+            startPreloading();
+            
+            // 其他现有的DOMContentLoaded代码...
+            
+            // 重新绑定开始实验按钮事件
+            const startBtn = document.getElementById('startExperimentBtn');
+            if (startBtn) {
+                startBtn.addEventListener('click', function() {
+                    console.log("开始按钮被点击");
+                    startExperiment();
+                });
+            } else {
+                console.error("找不到开始实验按钮");
+            }
+        });
+        
+        // 添加新函数：开始预加载
+        function startPreloading() {
+            console.log("开始预加载资源");
+            document.getElementById('loadingMessage').textContent = '正在准备加载资源...';
+            
+            // 添加超时保护，防止加载卡死
+            const loadTimeout = setTimeout(() => {
+                console.warn('资源加载超时，但您仍可以继续');
+                document.getElementById('loadingMessage').textContent = '资源加载可能需要更长时间，但您仍可以继续';
+            }, 60000); // 60秒超时
+            
+            // 并行加载图片和音频
+            Promise.all([preloadImages(), preloadAudio()])
+                .then(() => {
+                    // 清除超时
+                    clearTimeout(loadTimeout);
+                    
+                    // 确保进度显示为100%
+                    document.getElementById('totalLoadingPercent').textContent = '100%';
+                    document.getElementById('totalProgressFill').style.width = '100%';
+                    document.getElementById('loadingMessage').textContent = '所有资源加载完成！';
+                    
+                    console.log("所有资源加载完成");
+                })
+                .catch(error => {
+                    console.error('资源加载出错:', error);
+                    document.getElementById('loadingMessage').textContent = '部分资源加载失败，但您仍可以继续';
+                });
+        }
+        
         // 添加开始实验按钮的事件监听器
         document.addEventListener('DOMContentLoaded', function() {
             // 其他现有的DOMContentLoaded代码...
