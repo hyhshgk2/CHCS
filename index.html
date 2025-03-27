@@ -832,14 +832,6 @@
                 currentAudio.currentTime = 0;
             }
             
-            // 添加视觉反馈 - 高亮被选中的区域
-            const selectedArea = document.querySelector(`.click-area[data-option="${option}"]`);
-            
-            // 添加高亮样式
-            if (selectedArea) {
-                selectedArea.classList.add('selected');
-            }
-            
             // 记录当前试次的数据
             const currentTrialData = experimentData.trials[experimentData.trials.length - 1];
             currentTrialData.selected = option;
@@ -853,11 +845,6 @@
             
             // 在清除图片前添加短暂延迟，让用户看到反馈
             setTimeout(() => {
-                // 移除高亮样式
-                if (selectedArea) {
-                    selectedArea.classList.remove('selected');
-                }
-                
                 // 清除当前图片
                 const img = document.getElementById('trialImage');
                 img.src = '';
